@@ -1,0 +1,466 @@
+{
+  "knowledge_base": {
+    "metadata": {
+      "crop": "cabai_merah",
+      "version": "1.0",
+      "source_document": "783612603-Modul-Cabai-Edufarmers.pdf",
+      "source_title": "Modul Pembelajaran Praktik Pertanian Terbaik Budi Daya Cabai Merah",
+      "language": "id",
+      "excluded_topics": [
+        "OPT",
+        "hama",
+        "penyakit"
+      ]
+    },
+    "environment": {
+      "temperature": {
+        "growth": {
+          "min": 25,
+          "max": 27,
+          "unit": "C",
+          "description": "Suhu siang ideal untuk pertumbuhan tanaman cabai."
+        },
+        "fruit_formation": {
+          "min": 16,
+          "max": 23,
+          "unit": "C",
+          "description": "Suhu yang mendukung pembentukan buah cabai."
+        },
+        "high_day_temperature": {
+          "threshold": 32,
+          "unit": "C",
+          "effect": "Dapat menyebabkan kegagalan pembentukan buah."
+        },
+        "low_night_temperature": {
+          "threshold": 16,
+          "unit": "C",
+          "effect": "Dapat menyebabkan kegagalan pembentukan buah."
+        },
+        "soil": {
+          "min": 24,
+          "max": 30,
+          "unit": "C",
+          "description": "Suhu tanah yang mendukung pertumbuhan tanaman cabai."
+        }
+      },
+      "air_humidity": {
+        "ideal": {
+          "min": 70,
+          "max": 80,
+          "unit": "%",
+          "description": "Kelembapan udara normal/ideal."
+        },
+        "low": {
+          "threshold": 70,
+          "unit": "%",
+          "effect": "Dapat meningkatkan transpirasi dan risiko layu atau kekeringan."
+        },
+        "high": {
+          "threshold": 80,
+          "unit": "%",
+          "effect": "Dapat menghambat transpirasi dan menciptakan kondisi kurang ideal."
+        }
+      },
+      "soil_moisture": {
+        "ideal": {
+          "min": 60,
+          "max": 80,
+          "unit": "%",
+          "basis": "kapasitas_lapang",
+          "description": "Tanah lembap tetapi tidak becek atau tergenang."
+        }
+      },
+      "rainfall": {
+        "annual": {
+          "min": 600,
+          "max": 1200,
+          "unit": "mm_per_year",
+          "description": "Kisaran curah hujan tahunan yang mendukung budidaya cabai."
+        }
+      },
+      "altitude": {
+        "maximum": 1400,
+        "unit": "mdpl",
+        "description": "Cabai dapat tumbuh hingga sekitar 1400 mdpl, namun pertumbuhan di dataran tinggi cenderung lebih lambat."
+      }
+    },
+    "soil": {
+      "ph": {
+        "tolerable": {
+          "min": 5.5,
+          "max": 6.8,
+          "unit": "pH",
+          "description": "Kisaran pH yang dapat ditoleransi tanaman cabai."
+        },
+        "low": {
+          "condition": "<5.5",
+          "recommendation": "Pertimbangkan pengapuran untuk menaikkan pH tanah."
+        },
+        "liming": {
+          "purpose": "menaikkan_pH_tanah",
+          "application_time": "3-4_minggu_sebelum_tanam",
+          "dose": {
+            "min": 2,
+            "max": 4,
+            "unit": "ton_per_ha"
+          },
+          "alternative_dose": {
+            "min": 200,
+            "max": 400,
+            "unit": "gram_per_m2"
+          }
+        }
+      },
+      "organic_matter": {
+        "alluvial_lowland": {
+          "min": 10,
+          "max": 20,
+          "unit": "ton_per_ha"
+        },
+        "andosol_highland": {
+          "min": 20,
+          "max": 30,
+          "unit": "ton_per_ha"
+        },
+        "application": "Bersamaan dengan pengolahan tanah pertama.",
+        "waiting_period": "3-4_minggu_sebelum_tanam"
+      }
+    },
+    "location_and_planting": {
+      "location": {
+        "open_area": {
+          "required": true,
+          "description": "Lokasi berupa tempat terbuka dengan mikroklimat dan kesuburan tanah yang sesuai."
+        },
+        "water_source": {
+          "required": true,
+          "description": "Lokasi sebaiknya dekat dengan sumber air."
+        }
+      },
+      "planting_time": {
+        "dryland": {
+          "recommended": "awal_musim_hujan"
+        },
+        "paddy_field": {
+          "recommended": "akhir_musim_hujan"
+        },
+        "irrigated_land": {
+          "recommended": "akhir_musim_hujan_awal_musim_kemarau",
+          "period": "Maret-Juni"
+        }
+      }
+    },
+    "land_preparation": {
+      "soil_analysis": {
+        "required": true,
+        "description": "Kondisi tanah perlu diketahui sebelum budidaya."
+      },
+      "soil_tillage": {
+        "required": true,
+        "description": "Tanah diolah hingga menjadi gembur dan sesuai untuk pertumbuhan akar."
+      },
+      "basal_fertilizer": {
+        "application_time": "sekitar_1_minggu_sebelum_tanam"
+      },
+      "mulch": {
+        "recommended": true,
+        "types": [
+          "mulsa_plastik_hitam_perak",
+          "mulsa_jerami"
+        ],
+        "application": "Sebelum penanaman.",
+        "functions": [
+          "menjaga_stabilitas_kelembapan_tanah",
+          "mengurangi_pengauapan_air",
+          "mengurangi_kehilangan_unsur_hara",
+          "mengurangi_pertumbuhan_gulma"
+        ]
+      }
+    },
+    "seed_and_nursery": {
+      "seed_quality": {
+        "germination_min": 80,
+        "unit": "%",
+        "requirements": [
+          "kemurnian_varietas",
+          "tidak_tercampur_kotoran",
+          "benih_bermutu"
+        ]
+      },
+      "seedling_ready": {
+        "age": {
+          "min": 21,
+          "max": 28,
+          "unit": "hari_setelah_semai"
+        },
+        "true_leaves": {
+          "min": 4,
+          "max": 5,
+          "unit": "helai"
+        },
+        "height": {
+          "min": 5,
+          "max": 10,
+          "unit": "cm"
+        },
+        "condition": "Bibit sehat dan siap dipindahkan."
+      }
+    },
+    "planting": {
+      "seedlings_per_hole": 1,
+      "recommended_time": [
+        "pagi",
+        "sore"
+      ],
+      "first_irrigation": {
+        "required": true,
+        "time": "sore_hari"
+      },
+      "jma": {
+        "total_dose": 10,
+        "unit": "gram_per_tanaman",
+        "application": [
+          "50_persen_saat_semai",
+          "50_persen_saat_tanam"
+        ]
+      }
+    },
+    "irrigation": {
+      "soil_moisture": {
+        "ideal": {
+          "min": 60,
+          "max": 80,
+          "unit": "%",
+          "basis": "kapasitas_lapang"
+        },
+        "description": "Tanah dalam kondisi lembap tetapi tidak becek atau tergenang."
+      },
+      "schedule": {
+        "early_growth": {
+          "age": {
+            "min": 0,
+            "max": 30,
+            "unit": "hari_setelah_tanam"
+          },
+          "frequency": "setiap_hari"
+        },
+        "after_one_month": {
+          "age": {
+            "min": 31,
+            "unit": "hari_setelah_tanam"
+          },
+          "frequency": "setiap_2-3_hari"
+        }
+      },
+      "water_requirement": {
+        "vegetative": {
+          "volume": 250,
+          "unit": "ml_per_tanaman_per_2_hari"
+        },
+        "flowering_to_fruit_filling": {
+          "volume": 450,
+          "unit": "ml_per_tanaman_per_2_hari"
+        }
+      },
+      "recommended_time": "pagi_hari",
+      "waterlogging": {
+        "avoid": true,
+        "description": "Tanaman cabai tidak tahan genangan dalam waktu lama."
+      }
+    },
+    "fertilization": {
+      "basal": {
+        "dryland_highland_medium": [
+          {
+            "fertilizer": "SP-36",
+            "dose": 300,
+            "unit": "kg_per_ha"
+          },
+          {
+            "fertilizer": "NPK_16-16-16",
+            "dose_min": 700,
+            "dose_max": 1000,
+            "unit": "kg_per_ha"
+          }
+        ],
+        "paddy_field_lowland": [
+          {
+            "fertilizer": "SP-36",
+            "dose_min": 300,
+            "dose_max": 400,
+            "unit": "kg_per_ha"
+          }
+        ],
+        "relay_with_onion": [
+          {
+            "fertilizer": "SP-36",
+            "dose_min": 150,
+            "dose_max": 200,
+            "unit": "kg_per_ha"
+          }
+        ],
+        "intercropping_cabbage_or_tomato": [
+          {
+            "fertilizer": "NPK_16-16-16",
+            "dose_min": 700,
+            "dose_max": 1000,
+            "unit": "kg_per_ha"
+          }
+        ]
+      },
+      "supplementary": {
+        "dryland_highland_medium": {
+          "urea": {
+            "dose_min": 200,
+            "dose_max": 300,
+            "unit": "kg_per_ha",
+            "application": "3, 6, dan 9 minggu"
+          },
+          "ZA": {
+            "dose_min": 400,
+            "dose_max": 500,
+            "unit": "kg_per_ha",
+            "application": "3, 6, dan 9 minggu"
+          },
+          "KCl": {
+            "dose_min": 250,
+            "dose_max": 300,
+            "unit": "kg_per_ha",
+            "application": "3, 6, dan 9 minggu"
+          },
+          "NPK_16-16-16": {
+            "dose_min": 300,
+            "dose_max": 500,
+            "unit": "kg_per_ha",
+            "application": "10-14_hari_sekali_mulai_umur_1_bulan"
+          }
+        },
+        "paddy_field_lowland": {
+          "urea": {
+            "dose_min": 150,
+            "dose_max": 200,
+            "unit": "kg_per_ha",
+            "application": "0, 4, dan 8 minggu"
+          },
+          "ZA": {
+            "dose_min": 400,
+            "dose_max": 500,
+            "unit": "kg_per_ha",
+            "application": "0, 4, dan 8 minggu"
+          },
+          "KCl": {
+            "dose_min": 150,
+            "dose_max": 200,
+            "unit": "kg_per_ha",
+            "application": "0, 4, dan 8 minggu"
+          },
+          "NPK_16-16-16": {
+            "dose": 1000,
+            "unit": "kg_per_ha"
+          }
+        }
+      }
+    },
+    "maintenance": {
+      "replanting": {
+        "time": "1-2_hari_setelah_pindah_tanam",
+        "description": "Bibit yang mati atau tidak tumbuh dapat diganti."
+      },
+      "staking": {
+        "recommended": true,
+        "purpose": "Menopang tanaman agar tumbuh tegak."
+      },
+      "pruning": {
+        "water_shoots": {
+          "lowland": {
+            "start": 10,
+            "end": 12,
+            "unit": "HST"
+          },
+          "highland": {
+            "start": 15,
+            "end": 20,
+            "unit": "HST"
+          }
+        },
+        "main_branch_leaves": {
+          "lowland": {
+            "start": 75,
+            "end": 80,
+            "unit": "HST"
+          },
+          "highland": {
+            "start": 90,
+            "end": 90,
+            "unit": "HST"
+          }
+        },
+        "recommended_time": "pagi_hari"
+      },
+      "weeding": {
+        "recommended": true,
+        "purpose": "Mengurangi kompetisi gulma terhadap tanaman dalam memperoleh ruang, cahaya, air, dan unsur hara."
+      }
+    },
+    "harvest": {
+      "maturity": {
+        "color": "sekitar_80_persen_merah",
+        "shape": "buah_memanjang"
+      },
+      "first_harvest": {
+        "lowland": {
+          "min": 70,
+          "max": 75,
+          "unit": "HST"
+        },
+        "highland": {
+          "min": 80,
+          "max": 90,
+          "unit": "HST"
+        }
+      },
+      "factors": [
+        "varietas",
+        "lokasi_penanaman",
+        "kondisi_pertumbuhan"
+      ]
+    },
+    "post_harvest": {
+      "sorting": {
+        "required": true,
+        "description": "Memisahkan kotoran, benda asing, dan buah rusak."
+      },
+      "curing": {
+        "recommended": true,
+        "description": "Mengeringanginkan buah setelah sortasi untuk membantu menjaga kualitas."
+      },
+      "grading": {
+        "required": true,
+        "description": "Mengelompokkan buah berdasarkan mutu atau kualitas."
+      },
+      "storage": {
+        "condition": [
+          "kering",
+          "sejuk",
+          "sirkulasi_udara_baik"
+        ],
+        "avoid": "wadah_tertutup_rapat"
+      },
+      "cold_storage": {
+        "temperature": {
+          "min": 10,
+          "max": 13,
+          "unit": "C"
+        },
+        "humidity": {
+          "value": 90,
+          "unit": "%"
+        },
+        "maximum_storage_life": {
+          "value": 49,
+          "unit": "hari"
+        }
+      }
+    }
+  }
+}

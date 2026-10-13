@@ -1,0 +1,8 @@
+requests
+python-dotenv
+python-multipart
+fastapi
+uvicorn
+twilio
+google.genai
+beautifulsoup4
