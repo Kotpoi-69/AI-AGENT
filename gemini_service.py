@@ -32,7 +32,7 @@ VALID_ACTIONS = {
 # ------------------------------------------------------------
 
 MIN_YOLO_CONFIDENCE = 0.25
-MAX_YOLO_AGE_SECONDS = 120
+MAX_YOLO_AGE_SECONDS = 300
 
 # ------------------------------------------------------------
 # WEATHER SAFETY
