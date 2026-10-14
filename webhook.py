@@ -17,7 +17,11 @@ from gemini_service import analyze_farm
 import asyncio
 from contextlib import asynccontextmanager
 
-from ai_orchestrator import run_ai_cycle, AI_CYCLE_INTERVAL, calculate_plant_age,
+from ai_orchestrator import (
+    run_ai_cycle,
+    AI_CYCLE_INTERVAL,
+    calculate_plant_age,
+)
 
 
 
@@ -595,7 +599,12 @@ async def webhook(
         weather = as_dict(get_data("weather"))
         agent = as_dict(get_data("agent"))
         cam = as_dict(get_data("cam"))
+        
+        # Hitung umur tanaman berdasarkan tanggal acuan
+        current_age = calculate_plant_age(agent)
 
+        if current_age is None:
+            current_age = agent.get("age_days", 0)
         intent = classify_intent(message)
 
         print("INTENT:", intent)
@@ -620,7 +629,7 @@ async def webhook(
                 reply = (
                     "🌶️ STATUS LAHAN\n"
                     f"Jumlah Tanaman: {agent.get('plant_count', 0)}\n"
-                    f"Umur: {agent.get('age_days', 0)} hari\n"
+                    f"Umur: {current_age} hari\n"
                     f"Soil: {sensor.get('soil', 0)} %\n"
                     f"Suhu: {sensor.get('temperature', 0)} °C\n"
                     f"Humidity: {sensor.get('humidity', 0)} %\n"
