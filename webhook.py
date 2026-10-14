@@ -17,7 +17,7 @@ from gemini_service import analyze_farm
 import asyncio
 from contextlib import asynccontextmanager
 
-from ai_orchestrator import run_ai_cycle, AI_CYCLE_INTERVAL
+from ai_orchestrator import run_ai_cycle, AI_CYCLE_INTERVAL, calculate_plant_age,
 
 
 
@@ -206,12 +206,14 @@ def get_latest_fertilization_record(history):
 
         # Data sudah berupa satu catatan
         date_keys = (
+            "last_applied_at",
+            "last_applied_date",
             "timestamp",
             "date",
             "datetime",
             "created_at",
             "waktu",
-            "tanggal"
+            "tanggal",
         )
 
         if any(key in history for key in date_keys):
@@ -230,12 +232,14 @@ def get_latest_fertilization_record(history):
 
     def record_timestamp(record):
         for key in (
+            "last_applied_at",
+            "last_applied_date",
             "timestamp",
             "date",
             "datetime",
             "created_at",
             "waktu",
-            "tanggal"
+            "tanggal",
         ):
             timestamp = to_epoch_seconds(record.get(key))
 
@@ -247,8 +251,9 @@ def get_latest_fertilization_record(history):
     return max(records, key=record_timestamp)
 
 
+
 def calculate_days_since_fertilization(record):
-    """Hitung jarak hari sejak catatan pemupukan terakhir."""
+    """Hitung jarak hari sejak pemupukan terakhir."""
 
     if not isinstance(record, dict):
         return None
@@ -260,36 +265,44 @@ def calculate_days_since_fertilization(record):
         if value is not None:
             try:
                 days = float(value)
-
                 if days >= 0:
                     return days
             except (ValueError, TypeError):
                 pass
 
-    timestamp = None
+    # Prioritaskan timestamp Unix dari riwayat ESP32.
+    timestamp = to_epoch_seconds(
+        record.get("last_applied_at")
+    )
 
-    for key in (
-        "timestamp",
-        "date",
-        "datetime",
-        "created_at",
-        "waktu",
-        "tanggal"
-    ):
-        timestamp = to_epoch_seconds(record.get(key))
+    # Fallback untuk struktur riwayat yang lebih lama.
+    if timestamp is None:
+        for key in (
+            "last_applied_date",
+            "timestamp",
+            "date",
+            "datetime",
+            "created_at",
+            "waktu",
+            "tanggal",
+        ):
+            timestamp = to_epoch_seconds(record.get(key))
 
-        if timestamp is not None:
-            break
+            if timestamp is not None:
+                break
 
     if timestamp is None:
         return None
 
-    elapsed_seconds = datetime.now(timezone.utc).timestamp() - timestamp
+    elapsed_seconds = (
+        datetime.now(timezone.utc).timestamp() - timestamp
+    )
 
     if elapsed_seconds < 0:
         return None
 
     return elapsed_seconds / 86400
+
 
 
 def build_gemini_context(sensor, weather, agent, cam):
