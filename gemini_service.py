@@ -987,15 +987,14 @@ PENTING:
 # GEMINI REQUEST
 # ============================================================
 
-def generate_response(
-    prompt,
-    temperature=0.1,
-):
+def generate_response(prompt, temperature=0.1):
     """
-    Mengirim prompt ke Gemini.
+    Mengirim prompt ke Gemini dan mencatat penyebab
+    kegagalan tanpa menyamarkan error aslinya.
     """
-
     try:
+        print(f"[GEMINI] Model aktif: {MODEL_NAME}")
+        print(f"[GEMINI] Panjang prompt: {len(prompt)} karakter")
 
         response = client.models.generate_content(
             model=MODEL_NAME,
@@ -1005,20 +1004,32 @@ def generate_response(
             },
         )
 
-        return _safe_text(
-            getattr(response, "text", ""),
-            default=""
-        )
+        response_text = getattr(response, "text", None)
 
-    except Exception as error:
+        # Diagnostik jika SDK tidak menyediakan teks.
+        if not response_text or not response_text.strip():
+            print("[GEMINI] Respons teks kosong.")
+            print(
+                "[GEMINI] Candidate info:",
+                repr(getattr(response, "candidates", None))
+            )
+            print(
+                "[GEMINI] Prompt feedback:",
+                repr(getattr(response, "prompt_feedback", None))
+            )
+            return ""
 
         print(
-            "GEMINI ERROR:",
-            error
+            f"[GEMINI] Respons diterima: "
+            f"{len(response_text)} karakter"
         )
 
-        return ""
+        return response_text.strip()
 
+    except Exception as error:
+        print(f"[GEMINI] Error type: {type(error).__name__}")
+        print(f"[GEMINI] Error detail: {error}")
+        return ""
 
 # ============================================================
 # DEFAULT ANALYSIS
