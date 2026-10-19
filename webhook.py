@@ -14,52 +14,11 @@ from whatsapp_service import send_whatsapp, send_whatsapp_chunked
 from intent_classifier import classify_intent
 from agri_ai_agent import agriculture_chat_agent
 from gemini_service import analyze_farm
-import asyncio
-from contextlib import asynccontextmanager
 
-from ai_orchestrator import (
-    run_ai_cycle,
-    AI_CYCLE_INTERVAL,
-    calculate_plant_age,
-)
-
-
-
-
-@asynccontextmanager
-async def lifespan(app):
-    async def orchestrator_loop():
-        print("AI orchestrator scheduler started.")
-
-        while True:
-            try:
-                await asyncio.to_thread(run_ai_cycle)
-            except asyncio.CancelledError:
-                raise
-            except Exception as exc:
-                print(
-                    f"ORCHESTRATOR ERROR: "
-                    f"{type(exc).__name__}: {exc}"
-                )
-
-            await asyncio.sleep(AI_CYCLE_INTERVAL)
-
-    task = asyncio.create_task(orchestrator_loop())
-
-    try:
-        yield
-    finally:
-        task.cancel()
-
-        try:
-            await task
-        except asyncio.CancelledError:
-            pass
 
 
 app = FastAPI(
     title="Smart Agriculture WhatsApp Webhook",
-    lifespan=lifespan,
 )
 
 # ============================================================
@@ -210,14 +169,12 @@ def get_latest_fertilization_record(history):
 
         # Data sudah berupa satu catatan
         date_keys = (
-            "last_applied_at",
-            "last_applied_date",
             "timestamp",
             "date",
             "datetime",
             "created_at",
             "waktu",
-            "tanggal",
+            "tanggal"
         )
 
         if any(key in history for key in date_keys):
@@ -236,14 +193,12 @@ def get_latest_fertilization_record(history):
 
     def record_timestamp(record):
         for key in (
-            "last_applied_at",
-            "last_applied_date",
             "timestamp",
             "date",
             "datetime",
             "created_at",
             "waktu",
-            "tanggal",
+            "tanggal"
         ):
             timestamp = to_epoch_seconds(record.get(key))
 
@@ -255,9 +210,8 @@ def get_latest_fertilization_record(history):
     return max(records, key=record_timestamp)
 
 
-
 def calculate_days_since_fertilization(record):
-    """Hitung jarak hari sejak pemupukan terakhir."""
+    """Hitung jarak hari sejak catatan pemupukan terakhir."""
 
     if not isinstance(record, dict):
         return None
@@ -269,44 +223,36 @@ def calculate_days_since_fertilization(record):
         if value is not None:
             try:
                 days = float(value)
+
                 if days >= 0:
                     return days
             except (ValueError, TypeError):
                 pass
 
-    # Prioritaskan timestamp Unix dari riwayat ESP32.
-    timestamp = to_epoch_seconds(
-        record.get("last_applied_at")
-    )
+    timestamp = None
 
-    # Fallback untuk struktur riwayat yang lebih lama.
-    if timestamp is None:
-        for key in (
-            "last_applied_date",
-            "timestamp",
-            "date",
-            "datetime",
-            "created_at",
-            "waktu",
-            "tanggal",
-        ):
-            timestamp = to_epoch_seconds(record.get(key))
+    for key in (
+        "timestamp",
+        "date",
+        "datetime",
+        "created_at",
+        "waktu",
+        "tanggal"
+    ):
+        timestamp = to_epoch_seconds(record.get(key))
 
-            if timestamp is not None:
-                break
+        if timestamp is not None:
+            break
 
     if timestamp is None:
         return None
 
-    elapsed_seconds = (
-        datetime.now(timezone.utc).timestamp() - timestamp
-    )
+    elapsed_seconds = datetime.now(timezone.utc).timestamp() - timestamp
 
     if elapsed_seconds < 0:
         return None
 
     return elapsed_seconds / 86400
-
 
 
 def build_gemini_context(sensor, weather, agent, cam):
@@ -599,12 +545,7 @@ async def webhook(
         weather = as_dict(get_data("weather"))
         agent = as_dict(get_data("agent"))
         cam = as_dict(get_data("cam"))
-        
-        # Hitung umur tanaman berdasarkan tanggal acuan
-        current_age = calculate_plant_age(agent)
 
-        if current_age is None:
-            current_age = agent.get("age_days", 0)
         intent = classify_intent(message)
 
         print("INTENT:", intent)
@@ -629,7 +570,7 @@ async def webhook(
                 reply = (
                     "🌶️ STATUS LAHAN\n"
                     f"Jumlah Tanaman: {agent.get('plant_count', 0)}\n"
-                    f"Umur: {current_age} hari\n"
+                    f"Umur: {agent.get('age_days', 0)} hari\n"
                     f"Soil: {sensor.get('soil', 0)} %\n"
                     f"Suhu: {sensor.get('temperature', 0)} °C\n"
                     f"Humidity: {sensor.get('humidity', 0)} %\n"
