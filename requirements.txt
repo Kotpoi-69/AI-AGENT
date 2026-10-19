@@ -6,3 +6,4 @@ uvicorn
 twilio
 google.genai
 beautifulsoup4
+tzdata
