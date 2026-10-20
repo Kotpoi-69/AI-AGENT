@@ -550,27 +550,9 @@ def run_ai_cycle():
 # MAIN LOOP
 # ============================================================
 
-def main():
-    print("=" * 60)
-    print("KNOWLEDGE-BASED AI AGENT - SMART AGRICULTURE CABAI")
-    print("Keputusan aktuator: Knowledge Base Rule Engine (bukan Gemini)")
-    print("Eksekutor akhir: ESP32")
-    print("=" * 60)
-    print(f"\nInterval siklus: {AI_CYCLE_INTERVAL} detik")
-    print("Safety gate Rule Engine: YOLO, sensor hujan lokal, OWM, pH, riwayat pemupukan")
-
-    while True:
-        try:
-            run_ai_cycle()
-        except KeyboardInterrupt:
-            print("\nAI Agent dihentikan.")
-            break
-        except Exception as exc:
-            print("\nUNEXPECTED ERROR:", exc)
-
-        print(f"\nMenunggu {AI_CYCLE_INTERVAL} detik...")
-        time.sleep(AI_CYCLE_INTERVAL)
-
-
 if __name__ == "__main__":
-    main()
+    print(
+        "AI Orchestrator tidak menjalankan loop otomatis. "
+        "Jalankan API dengan: "
+        "uvicorn orchestrator_api:app --host 0.0.0.0 --port $PORT"
+    )
