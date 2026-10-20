@@ -10,9 +10,6 @@ def main():
 
         print("Cycle Done:", result)
 
-        # simulasi 1 hari 
-        time.sleep(10)
-
 
 if __name__ == "__main__":
     main()
