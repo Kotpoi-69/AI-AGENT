@@ -31,7 +31,7 @@ ACTION_FERTILIZE = "FERTILIZE"
 
 SERVO_OFF = "OFF"
 SERVO_FERTILIZE = "FERTILIZE"
-
+AI_CYCLE_INTERVAL = 60
 
 
 # ============================================================
