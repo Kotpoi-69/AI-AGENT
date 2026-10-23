@@ -174,7 +174,9 @@ def get_latest_fertilization_record(history):
             "datetime",
             "created_at",
             "waktu",
-            "tanggal"
+            "tanggal",
+            "last_applied_at",
+            "last_applied_date"
         )
 
         if any(key in history for key in date_keys):
@@ -198,7 +200,9 @@ def get_latest_fertilization_record(history):
             "datetime",
             "created_at",
             "waktu",
-            "tanggal"
+            "tanggal",
+            "last_applied_at",
+            "last_applied_date"
         ):
             timestamp = to_epoch_seconds(record.get(key))
 
@@ -237,7 +241,9 @@ def calculate_days_since_fertilization(record):
         "datetime",
         "created_at",
         "waktu",
-        "tanggal"
+        "tanggal",
+        "last_applied_at",
+        "last_applied_date"
     ):
         timestamp = to_epoch_seconds(record.get(key))
 
@@ -254,6 +260,87 @@ def calculate_days_since_fertilization(record):
 
     return elapsed_seconds / 86400
 
+
+def answer_fertilization_date_question(message):
+    """
+    Jawab pertanyaan tanggal pemupukan langsung dari Firebase.
+    Tidak bergantung pada Gemini atau intent classifier.
+    """
+
+    asks_when = re.search(
+        r"\b(kapan|tanggal|jam|pukul|waktu)\b",
+        message,
+        flags=re.IGNORECASE
+    )
+
+    mentions_fertilization = re.search(
+        r"\b(pemupukan|pupuk|memupuk|dipupuk)\b",
+        message,
+        flags=re.IGNORECASE
+    )
+
+    if not (asks_when and mentions_fertilization):
+        return None
+
+    history = as_dict(
+        get_data("fertilization_history/latest")
+    )
+
+    if not history:
+        return (
+            "Riwayat pemupukan terakhir belum ditemukan "
+            "di Firebase pada /fertilization_history/latest."
+        )
+
+    applied_date = history.get("last_applied_date")
+    timestamp = to_epoch_seconds(
+        history.get("last_applied_at", history.get("timestamp"))
+    )
+
+    # Utamakan tanggal yang tersimpan di Firebase.
+    readable_date = None
+
+    if applied_date:
+        try:
+            parsed_date = date.fromisoformat(str(applied_date))
+            readable_date = parsed_date.strftime("%d-%m-%Y")
+        except ValueError:
+            pass
+
+    # Jika timestamp tersedia, tampilkan jam juga.
+    if timestamp is not None:
+        try:
+            applied_datetime = datetime.fromtimestamp(
+                timestamp,
+                tz=ZoneInfo("Asia/Jakarta")
+            )
+
+            readable_datetime = applied_datetime.strftime(
+                "%d-%m-%Y pukul %H:%M WIB"
+            )
+
+            return (
+                f"🌱 Pemupukan terakhir tercatat pada "
+                f"{readable_datetime}.\n"
+                "Sumber: Firebase "
+                "/fertilization_history/latest."
+            )
+        except (ValueError, OverflowError, OSError):
+            pass
+
+    if readable_date:
+        return (
+            f"🌱 Pemupukan terakhir tercatat pada "
+            f"{readable_date}.\n"
+            "Jam pemupukan tidak tersedia atau tidak valid.\n"
+            "Sumber: Firebase "
+            "/fertilization_history/latest."
+        )
+
+    return (
+        "Catatan pemupukan ditemukan, tetapi tanggal "
+        "dan timestamp pemupukan tidak valid."
+    )
 
 def build_gemini_context(sensor, weather, agent, cam):
     """
@@ -546,6 +633,11 @@ async def webhook(
         agent = as_dict(get_data("agent"))
         cam = as_dict(get_data("cam"))
 
+        fertilization_reply = answer_fertilization_date_question(message)
+
+        if fertilization_reply is not None:
+            send_smart(sender, fertilization_reply)
+            return PlainTextResponse("OK")
         intent = classify_intent(message)
 
         print("INTENT:", intent)
