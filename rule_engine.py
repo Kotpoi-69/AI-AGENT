@@ -34,7 +34,7 @@ except Exception:  # pragma: no cover - handled fail-safe by evaluate_rules
 VALID_ACTIONS = {"NONE", "IRRIGATE", "FERTILIZE"}
 MIN_YOLO_CONFIDENCE = 0.25
 MAX_YOLO_AGE_SECONDS = 300
-OWM_RAIN_PROBABILITY_THRESHOLD = 100.0
+OWM_RAIN_PROBABILITY_THRESHOLD = 70.0
 # KB says 10–14 days. Use the earliest permitted day (10) as the due threshold.
 DEFAULT_NPK_MIN_INTERVAL_DAYS = 10
 DEFAULT_FERTILIZATION_START_AGE_DAYS = 30
