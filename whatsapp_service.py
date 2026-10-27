@@ -105,8 +105,8 @@ def send_whatsapp_chunked(to, message, chunk_size=1500):
         prefix = f"({i}/{len(chunks)})\n"
 
         success = _send_whatsapp(
-            to,
-            prefix + chunk
+            to=to,
+            message=prefix + chunk
         )
 
         if not success:
