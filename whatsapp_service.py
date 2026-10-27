@@ -38,19 +38,32 @@ def _send_whatsapp(to, message=None, content_sid=None, content_variables=None):
         return False
 
     try:
+        # 🟢 PERBAIKAN: Pastikan format nomor 'to' bersih dan tidak double 'whatsapp:'
+        to_str = str(to).strip()
+        if to_str.startswith("whatsapp:"):
+            # Jika sudah ada prefix whatsapp:, ambil nomornya saja
+            clean_to = to_str 
+        else:
+            # Jika belum ada, tambahkan prefix whatsapp:
+            clean_to = f"whatsapp:{to_str}"
+
+        # 🟢 PERBAIKAN: Pastikan format nomor 'FROM' di .env juga benar
+        from_str = str(FROM).strip()
+        clean_from = from_str if from_str.startswith("whatsapp:") else f"whatsapp:{from_str}"
+
         # Menyiapkan argumen dasar
         payload = {
-            "from_": FROM,
-            "to": f"whatsapp:{to}"
+            "from_": clean_from,
+            "to": clean_to
         }
 
-        # JIKA MENGGUNAKAN TEMPLATE (Untuk pesan pembuka / pemicu jendela 24 jam)
+        # JIKA MENGGUNAKAN TEMPLATE
         if content_sid:
             payload["content_sid"] = content_sid
             if content_variables:
                 payload["content_variables"] = content_variables
         
-        # JIKA MENGGUNAKAN TEKS BEBAS (Hasil Gemini - hanya bekerja jika jendela 24 jam aktif)
+        # JIKA MENGGUNAKAN TEKS BEBAS (Hasil Gemini)
         elif message:
             payload["body"] = message
         
@@ -70,13 +83,11 @@ def _send_whatsapp(to, message=None, content_sid=None, content_variables=None):
             f"status={e.status}, message={e.msg}"
         )
         if e.code == 21654:
-            print("Tips: Gunakan 'content_sid' untuk pesan pertama di luar jendela 24 jam.")
+            print("Tips: Periksa apakah session 24 jam untuk nomor ini benar-benar aktif.")
         return False
     except Exception as e:
         print(f"WHATSAPP ERROR: {type(e).__name__}: {e}")
         return False
-
-
 
 def send_whatsapp(to, message):
     """Mengirim satu pesan WhatsApp."""
