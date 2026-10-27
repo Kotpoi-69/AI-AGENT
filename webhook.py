@@ -1,12 +1,12 @@
-
 # webhook.py
 
 import re
 from datetime import datetime, date, timezone
 from zoneinfo import ZoneInfo
 
-from fastapi import FastAPI, Form
+from fastapi import FastAPI, Form, Response
 from fastapi.responses import PlainTextResponse
+from twilio.twiml.messaging_response import MessagingResponse
 
 from firebase_service import get_data, update_data
 from whatsapp_service import send_whatsapp, send_whatsapp_chunked
@@ -16,45 +16,26 @@ from agri_ai_agent import agriculture_chat_agent
 from gemini_service import analyze_farm
 
 
-
 app = FastAPI(
     title="Smart Agriculture WhatsApp Webhook",
 )
 
 # ============================================================
-# FASTAPI
+# WHATSAPP WITH TWIML RESPONSE (ANTI ERROR 21654)
 # ============================================================
 
-
-
-# ============================================================
-# WHATSAPP
-# ============================================================
-
-def send_smart(to, msg):
-    """Kirim pesan WhatsApp, termasuk pesan yang panjang."""
-
-    try:
-        if not isinstance(msg, str):
-            msg = str(msg)
-
-        if len(msg) > 1500:
-            result = send_whatsapp_chunked(to, msg)
-        else:
-            result = send_whatsapp(to, msg)
-
-        if result is False:
-            print("WHATSAPP WARNING: Pesan gagal dikirim.")
-            return False
-
-        return True
-
-    except Exception as e:
-        print(
-            f"WHATSAPP SEND ERROR: "
-            f"{type(e).__name__}: {e}"
-        )
-        return False
+def send_smart_twiml(msg):
+    """
+    Membungkus teks ke dalam format TwiML XML.
+    Cara ini langsung membalas koneksi Webhook masuk, 
+    sehingga BEBAS dari kewajiban memakai ContentSid/Template!
+    """
+    twilio_response = MessagingResponse()
+    if not isinstance(msg, str):
+        msg = str(msg)
+    
+    twilio_response.message(msg)
+    return Response(content=str(twilio_response), media_type="application/xml")
 
 
 # ============================================================
@@ -87,53 +68,36 @@ def parse_set_umur(message):
 
 def as_dict(value):
     """Pastikan data Firebase berbentuk dictionary."""
-
     return value if isinstance(value, dict) else {}
 
 
 def to_epoch_seconds(value):
     """
     Konversi timestamp menjadi epoch seconds.
-
-    Mendukung:
-    - Unix timestamp dalam detik
-    - Unix timestamp dalam milidetik
-    - ISO datetime, misalnya 2026-10-13T10:00:00Z
-
-    Jika format tidak dikenal, kembalikan None.
     """
-
     if value is None:
         return None
 
     try:
         if isinstance(value, (int, float)):
             timestamp = float(value)
-
-            # Timestamp milidetik
             if timestamp > 100_000_000_000:
                 timestamp /= 1000
-
             return timestamp
 
         if isinstance(value, str):
             value = value.strip()
-
             if not value:
                 return None
 
-            # Timestamp numerik berbentuk string
             try:
                 timestamp = float(value)
-
                 if timestamp > 100_000_000_000:
                     timestamp /= 1000
-
                 return timestamp
             except ValueError:
                 pass
 
-            # ISO datetime
             normalized = value.replace("Z", "+00:00")
             parsed = datetime.fromisoformat(normalized)
 
@@ -149,34 +113,16 @@ def to_epoch_seconds(value):
 
 
 def get_latest_fertilization_record(history):
-    """
-    Ambil catatan pemupukan terbaru dari struktur Firebase
-    yang umum digunakan.
-
-    Struktur yang didukung antara lain:
-    - {"latest": {...}}
-    - {"timestamp": ..., ...}
-    - {"record_1": {...}, "record_2": {...}}
-    - daftar record
-    """
-
+    """Ambil catatan pemupukan terbaru dari Firebase."""
     if isinstance(history, list):
         records = [item for item in history if isinstance(item, dict)]
-
     elif isinstance(history, dict):
         if isinstance(history.get("latest"), dict):
             return history["latest"]
 
-        # Data sudah berupa satu catatan
         date_keys = (
-            "timestamp",
-            "date",
-            "datetime",
-            "created_at",
-            "waktu",
-            "tanggal",
-            "last_applied_at",
-            "last_applied_date"
+            "timestamp", "date", "datetime", "created_at",
+            "waktu", "tanggal", "last_applied_at", "last_applied_date"
         )
 
         if any(key in history for key in date_keys):
@@ -186,7 +132,6 @@ def get_latest_fertilization_record(history):
             item for item in history.values()
             if isinstance(item, dict)
         ]
-
     else:
         return {}
 
@@ -195,20 +140,12 @@ def get_latest_fertilization_record(history):
 
     def record_timestamp(record):
         for key in (
-            "timestamp",
-            "date",
-            "datetime",
-            "created_at",
-            "waktu",
-            "tanggal",
-            "last_applied_at",
-            "last_applied_date"
+            "timestamp", "date", "datetime", "created_at",
+            "waktu", "tanggal", "last_applied_at", "last_applied_date"
         ):
             timestamp = to_epoch_seconds(record.get(key))
-
             if timestamp is not None:
                 return timestamp
-
         return 0
 
     return max(records, key=record_timestamp)
@@ -216,37 +153,25 @@ def get_latest_fertilization_record(history):
 
 def calculate_days_since_fertilization(record):
     """Hitung jarak hari sejak catatan pemupukan terakhir."""
-
     if not isinstance(record, dict):
         return None
 
-    # Gunakan nilai yang sudah dihitung jika tersedia.
     for key in ("days_since_last", "days_since_last_fertilization"):
         value = record.get(key)
-
         if value is not None:
             try:
                 days = float(value)
-
                 if days >= 0:
                     return days
             except (ValueError, TypeError):
                 pass
 
     timestamp = None
-
     for key in (
-        "timestamp",
-        "date",
-        "datetime",
-        "created_at",
-        "waktu",
-        "tanggal",
-        "last_applied_at",
-        "last_applied_date"
+        "timestamp", "date", "datetime", "created_at",
+        "waktu", "tanggal", "last_applied_at", "last_applied_date"
     ):
         timestamp = to_epoch_seconds(record.get(key))
-
         if timestamp is not None:
             break
 
@@ -254,7 +179,6 @@ def calculate_days_since_fertilization(record):
         return None
 
     elapsed_seconds = datetime.now(timezone.utc).timestamp() - timestamp
-
     if elapsed_seconds < 0:
         return None
 
@@ -262,44 +186,21 @@ def calculate_days_since_fertilization(record):
 
 
 def answer_fertilization_date_question(message):
-    """
-    Jawab pertanyaan tanggal pemupukan langsung dari Firebase.
-    Tidak bergantung pada Gemini atau intent classifier.
-    """
-
-    asks_when = re.search(
-        r"\b(kapan|tanggal|jam|pukul|waktu)\b",
-        message,
-        flags=re.IGNORECASE
-    )
-
-    mentions_fertilization = re.search(
-        r"\b(pemupukan|pupuk|memupuk|dipupuk)\b",
-        message,
-        flags=re.IGNORECASE
-    )
+    """Jawab pertanyaan tanggal pemupukan langsung dari Firebase."""
+    asks_when = re.search(r"\b(kapan|tanggal|jam|pukul|waktu)\b", message, flags=re.IGNORECASE)
+    mentions_fertilization = re.search(r"\b(pemupukan|pupuk|memupuk|dipupuk)\b", message, flags=re.IGNORECASE)
 
     if not (asks_when and mentions_fertilization):
         return None
 
-    history = as_dict(
-        get_data("fertilization_history/latest")
-    )
-
+    history = as_dict(get_data("fertilization_history/latest"))
     if not history:
-        return (
-            "Riwayat pemupukan terakhir belum ditemukan "
-            "di Firebase pada /fertilization_history/latest."
-        )
+        return "Riwayat pemupukan terakhir belum ditemukan di Firebase pada /fertilization_history/latest."
 
     applied_date = history.get("last_applied_date")
-    timestamp = to_epoch_seconds(
-        history.get("last_applied_at", history.get("timestamp"))
-    )
+    timestamp = to_epoch_seconds(history.get("last_applied_at", history.get("timestamp")))
 
-    # Utamakan tanggal yang tersimpan di Firebase.
     readable_date = None
-
     if applied_date:
         try:
             parsed_date = date.fromisoformat(str(applied_date))
@@ -307,117 +208,57 @@ def answer_fertilization_date_question(message):
         except ValueError:
             pass
 
-    # Jika timestamp tersedia, tampilkan jam juga.
     if timestamp is not None:
         try:
-            applied_datetime = datetime.fromtimestamp(
-                timestamp,
-                tz=ZoneInfo("Asia/Jakarta")
-            )
-
-            readable_datetime = applied_datetime.strftime(
-                "%d-%m-%Y pukul %H:%M WIB"
-            )
-
-            return (
-                f"🌱 Pemupukan terakhir tercatat pada "
-                f"{readable_datetime}.\n"
-                "Sumber: Firebase "
-                "/fertilization_history/latest."
-            )
+            applied_datetime = datetime.fromtimestamp(timestamp, tz=ZoneInfo("Asia/Jakarta"))
+            readable_datetime = applied_datetime.strftime("%d-%m-%Y pukul %H:%M WIB")
+            return f"🌱 Pemupukan terakhir tercatat pada {readable_datetime}.\nSumber: Firebase /fertilization_history/latest."
         except (ValueError, OverflowError, OSError):
             pass
 
     if readable_date:
-        return (
-            f"🌱 Pemupukan terakhir tercatat pada "
-            f"{readable_date}.\n"
-            "Jam pemupukan tidak tersedia atau tidak valid.\n"
-            "Sumber: Firebase "
-            "/fertilization_history/latest."
-        )
+        return f"🌱 Pemupukan terakhir tercatat pada {readable_date}.\nJam pemupukan tidak tersedia atau tidak valid.\nSumber: Firebase /fertilization_history/latest."
 
-    return (
-        "Catatan pemupukan ditemukan, tetapi tanggal "
-        "dan timestamp pemupukan tidak valid."
-    )
+    return "Catatan pemupukan ditemukan, tetapi tanggal dan timestamp pemupukan tidak valid."
+
 
 def build_gemini_context(sensor, weather, agent, cam):
-    """
-    Bentuk konteks bertingkat yang diharapkan gemini_service.py.
+    """Bentuk konteks bertingkat yang diharapkan gemini_service.py."""
+    plant_detection = as_dict(get_data("plant_detection"))
 
-    Catatan:
-    Path plant_detection dan fertilization_history di bawah
-    harus sesuai dengan struktur Firebase yang sebenarnya.
-    """
-
-    # Data deteksi tanaman, jika disimpan terpisah.
-    plant_detection = as_dict(
-        get_data("plant_detection")
-    )
-
-    # Fallback ke data kamera lama jika path terpisah kosong.
     if not plant_detection:
         plant_detection = {
-            "plant_detected": cam.get(
-                "plant_detected",
-                cam.get("tanaman", False)
-            ),
+            "plant_detected": cam.get("plant_detected", cam.get("tanaman", False)),
             "confidence": cam.get("confidence", 0),
         }
-
-        # Jangan membuat timestamp palsu.
         for key in ("timestamp", "updated_at", "created_at"):
             if cam.get(key) is not None:
                 plant_detection["timestamp"] = cam[key]
                 break
 
-    # Normalisasi nama field deteksi.
     if "plant_detected" not in plant_detection:
-        plant_detection["plant_detected"] = plant_detection.get(
-            "tanaman", False
-        )
+        plant_detection["plant_detected"] = plant_detection.get("tanaman", False)
 
-    detection_timestamp = to_epoch_seconds(
-        plant_detection.get("timestamp")
-    )
-
+    detection_timestamp = to_epoch_seconds(plant_detection.get("timestamp"))
     if detection_timestamp is None:
         for key in ("updated_at", "created_at"):
-            detection_timestamp = to_epoch_seconds(
-                plant_detection.get(key)
-            )
-
+            detection_timestamp = to_epoch_seconds(plant_detection.get(key))
             if detection_timestamp is not None:
                 break
 
     if detection_timestamp is not None:
         plant_detection["timestamp"] = detection_timestamp
 
-    # Riwayat pemupukan.
     fertilization_history = get_data("fertilization_history/latest")
-
-    # Fallback ke node riwayat apabila node /latest tidak ada.
     if not fertilization_history:
         fertilization_history = get_data("fertilization_history")
 
-    latest_fertilization = get_latest_fertilization_record(
-        fertilization_history
-    )
+    latest_fertilization = get_latest_fertilization_record(fertilization_history)
+    days_since_last = calculate_days_since_fertilization(latest_fertilization)
 
-    days_since_last = calculate_days_since_fertilization(
-        latest_fertilization
-    )
-
-    fertilization_context = {
-        "days_since_last": days_since_last
-    }
-
-    # Pertahankan field izin jika catatan terbaru memilikinya.
+    fertilization_context = {"days_since_last": days_since_last}
     if "allowed" in latest_fertilization:
-        fertilization_context["allowed"] = (
-            latest_fertilization["allowed"]
-        )
+        fertilization_context["allowed"] = latest_fertilization["allowed"]
 
     context = {
         "sensor": {
@@ -454,13 +295,8 @@ def build_gemini_context(sensor, weather, agent, cam):
     return context
 
 
-# ============================================================
-# FORMAT GEMINI RESULT
-# ============================================================
-
 def format_analysis_result(result):
     """Ubah hasil analisis Gemini menjadi teks WhatsApp."""
-
     if not isinstance(result, dict):
         return str(result)
 
@@ -484,23 +320,16 @@ def format_analysis_result(result):
     ]
 
     if irrigation_needed is not None:
-        lines.append(
-            "Kebutuhan irigasi: "
-            + ("Ya" if irrigation_needed else "Tidak")
-        )
+        lines.append("Kebutuhan irigasi: " + ("Ya" if irrigation_needed else "Tidak"))
 
     if fertilization_needed is not None:
-        lines.append(
-            "Kebutuhan pemupukan: "
-            + ("Ya" if fertilization_needed else "Tidak")
-        )
+        lines.append("Kebutuhan pemupukan: " + ("Ya" if fertilization_needed else "Tidak"))
 
     lines.extend([
         "",
         f"Alasan: {reason}",
         "",
-        "Catatan: Ini hasil analisis AI, bukan konfirmasi "
-        "bahwa pompa atau aktuator sudah dijalankan."
+        "Catatan: Ini hasil analisis AI, bukan konfirmasi bahwa pompa atau aktuator sudah dijalankan."
     ])
 
     return "\n".join(lines)
@@ -533,8 +362,7 @@ async def webhook(
     message = Body.strip()
 
     if not message:
-        send_smart(sender, "Pesan kosong. Silakan kirim perintah.")
-        return PlainTextResponse("OK")
+        return send_smart_twiml("Pesan kosong. Silakan kirim perintah.")
 
     print("=" * 60)
     print("FROM:", sender)
@@ -544,48 +372,28 @@ async def webhook(
     # --------------------------------------------------------
     # COMMAND: SET JUMLAH TANAMAN
     # --------------------------------------------------------
-
     plant_count = parse_set_tanaman(message)
 
     if plant_count is not None:
         try:
-            success = update_data(
-                "agent",
-                {"plant_count": plant_count}
-            )
-
+            success = update_data("agent", {"plant_count": plant_count})
             if success:
-                send_smart(
-                    sender,
-                    f"✅ Jumlah tanaman berhasil diset menjadi "
-                    f"{plant_count} tanaman."
-                )
+                reply = f"✅ Jumlah tanaman berhasil diset menjadi {plant_count} tanaman."
             else:
-                send_smart(
-                    sender,
-                    "❌ Gagal menyimpan jumlah tanaman ke Firebase."
-                )
-
+                reply = "❌ Gagal menyimpan jumlah tanaman ke Firebase."
         except Exception as e:
             print("SET TANAMAN ERROR:", repr(e))
-            send_smart(
-                sender,
-                "❌ Terjadi kesalahan saat menyimpan jumlah tanaman."
-            )
-
-        return PlainTextResponse("OK")
+            reply = "❌ Terjadi kesalahan saat menyimpan jumlah tanaman."
+        
+        return send_smart_twiml(reply)
 
     # --------------------------------------------------------
     # COMMAND: SET UMUR TANAMAN
     # --------------------------------------------------------
-
     age_days = parse_set_umur(message)
 
     if age_days is not None:
-        today = datetime.now(
-            ZoneInfo("Asia/Jakarta")
-        ).date().isoformat()
-
+        today = datetime.now(ZoneInfo("Asia/Jakarta")).date().isoformat()
         try:
             success = update_data(
                 "agent",
@@ -595,38 +403,19 @@ async def webhook(
                     "age_reference_date": today,
                 }
             )
-
             if success:
-                send_smart(
-                    sender,
-                    (
-                        f"✅ Umur tanaman berhasil diset menjadi "
-                        f"{age_days} hari.\n"
-                        f"📅 Tanggal acuan: {today}\n"
-                        "Umur akan bertambah otomatis setiap "
-                        "pergantian hari jika logika pembaruan "
-                        "umur di sistem lu aktif."
-                    )
-                )
+                reply = f"✅ Umur tanaman berhasil diset menjadi {age_days} hari.\n📅 Tanggal acuan: {today}\nUmur akan bertambah otomatis setiap pergantian hari jika logika pembaruan umur di sistem lu aktif."
             else:
-                send_smart(
-                    sender,
-                    "❌ Gagal menyimpan umur tanaman ke Firebase."
-                )
-
+                reply = "❌ Gagal menyimpan umur tanaman ke Firebase."
         except Exception as e:
             print("SET UMUR ERROR:", repr(e))
-            send_smart(
-                sender,
-                "❌ Terjadi kesalahan saat menyimpan umur tanaman."
-            )
-
-        return PlainTextResponse("OK")
+            reply = "❌ Terjadi kesalahan saat menyimpan umur tanaman."
+        
+        return send_smart_twiml(reply)
 
     # --------------------------------------------------------
     # LOAD DATA FIREBASE DAN CLASSIFY INTENT
     # --------------------------------------------------------
-
     try:
         sensor = as_dict(get_data("sensor"))
         weather = as_dict(get_data("weather"))
@@ -634,27 +423,20 @@ async def webhook(
         cam = as_dict(get_data("cam"))
 
         fertilization_reply = answer_fertilization_date_question(message)
-
         if fertilization_reply is not None:
-            send_smart(sender, fertilization_reply)
-            return PlainTextResponse("OK")
-        intent = classify_intent(message)
+            return send_smart_twiml(fertilization_reply)
 
+        intent = classify_intent(message)
         print("INTENT:", intent)
 
         if not isinstance(intent, dict):
-            send_smart(
-                sender,
-                "Maaf, perintah belum dapat dikenali."
-            )
-            return PlainTextResponse("OK")
+            return send_smart_twiml("Maaf, perintah belum dapat dikenali.")
 
         intent_type = intent.get("intent", "chat")
 
         # ----------------------------------------------------
         # COMMANDS
         # ----------------------------------------------------
-
         if intent_type == "command":
             cmd = intent.get("command")
 
@@ -670,17 +452,14 @@ async def webhook(
                     f"Status AI: {agent.get('status', '-')}\n"
                     f"Pompa: {agent.get('pump_duration', 0)} detik"
                 )
-
             elif cmd == "cuaca":
                 reply = (
                     "☁️ CUACA\n\n"
                     f"Forecast: {weather.get('forecast', '-')}\n"
                     f"Suhu: {weather.get('temperature', 0)} °C\n"
                     f"Humidity: {weather.get('humidity', 0)} %\n"
-                    f"Rain Prob: "
-                    f"{weather.get('rain_probability', 0)} %"
+                    f"Rain Prob: {weather.get('rain_probability', 0)} %"
                 )
-
             elif cmd == "pompa":
                 reply = (
                     "🚿 POMPA\n\n"
@@ -688,93 +467,48 @@ async def webhook(
                     f"Durasi: {agent.get('pump_duration', 0)} detik\n"
                     f"Alasan: {agent.get('reason', '-')}"
                 )
-
             elif cmd == "tanaman":
-                detected = cam.get(
-                    "tanaman",
-                    cam.get("plant_detected", False)
-                )
-
+                detected = cam.get("tanaman", cam.get("plant_detected", False))
                 reply = (
                     "🌿 DETEKSI TANAMAN\n\n"
                     f"Terdeteksi: {'Ya' if detected else 'Tidak'}\n"
                     f"Confidence: {cam.get('confidence', 0)}"
                 )
-
             else:
-                reply = (
-                    "Perintah tidak dikenali.\n"
-                    "Coba: status, cuaca, pompa, atau tanaman."
-                )
+                reply = "Perintah tidak dikenali.\nCoba: status, cuaca, pompa, atau tanaman."
 
-            send_smart(sender, reply)
-            return PlainTextResponse("OK")
+            return send_smart_twiml(reply)
 
         # ----------------------------------------------------
         # AI ANALYSIS
         # ----------------------------------------------------
-
         elif intent_type == "analysis":
             try:
-                context = build_gemini_context(
-                    sensor,
-                    weather,
-                    agent,
-                    cam
-                )
-
-                result = analyze_farm(
-                    context,
-                    purpose="analysis"
-                )
-
+                context = build_gemini_context(sensor, weather, agent, cam)
+                result = analyze_farm(context, purpose="analysis")
                 reply = format_analysis_result(result)
-
             except Exception as e:
-                print(
-                    f"ANALYSIS ERROR: {type(e).__name__}: {e}"
-                )
+                print(f"ANALYSIS ERROR: {type(e).__name__}: {e}")
+                reply = "AI analisis sedang tidak tersedia. Silakan coba lagi nanti."
 
-                reply = (
-                    "AI analisis sedang tidak tersedia. "
-                    "Silakan coba lagi nanti."
-                )
-
-            send_smart(sender, reply)
-            return PlainTextResponse("OK")
+            if len(reply) > 1500:
+                send_whatsapp_chunked(sender, reply)
+                return Response(content=str(MessagingResponse()), media_type="application/xml")
+            else:
+                return send_smart_twiml(reply)
 
         # ----------------------------------------------------
         # AGRICULTURE CHAT
         # ----------------------------------------------------
-
         else:
             try:
                 reply = agriculture_chat_agent(message)
-
             except Exception as e:
-                print(
-                    f"CHAT ERROR: {type(e).__name__}: {e}"
-                )
+                print(f"CHAT ERROR: {type(e).__name__}: {e}")
+                reply = "AI chat sedang sibuk. Silakan coba lagi nanti."
 
-                reply = (
-                    "AI chat sedang sibuk. "
-                    "Silakan coba lagi nanti."
-                )
-
-            send_smart(sender, reply)
-            return PlainTextResponse("OK")
+            return send_smart_twiml(reply)
 
     except Exception as e:
-        print(
-            f"WEBHOOK FATAL: {type(e).__name__}: {e}"
-        )
-
-        # Balas HTTP 200 agar provider tidak terus mengulang
-        # pesan hanya karena terjadi error internal handler.
-        send_smart(
-            sender,
-            "Terjadi kesalahan pada sistem. "
-            "Silakan coba lagi beberapa saat."
-        )
-
-        return PlainTextResponse("Internal error", status_code=500)
+        print(f"WEBHOOK FATAL: {type(e).__name__}: {e}")
+        return send_smart_twiml("Terjadi kesalahan pada sistem. Silakan coba lagi beberapa saat.")
