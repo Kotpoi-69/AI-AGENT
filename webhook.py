@@ -166,6 +166,9 @@ async def webhook(
         # ----------------------------------------------------
         # HANDLING INTENT: COMMAND
         # ----------------------------------------------------
+                # ----------------------------------------------------
+        # HANDLING INTENT: COMMAND (VERSI LENGKAP ALL DATA)
+        # ----------------------------------------------------
         if intent_type == "command":
             cmd = intent.get("command")
             if cmd == "status":
@@ -181,15 +184,35 @@ async def webhook(
                     f"Pompa: {agent.get('pump_duration', 0)} detik"
                 )
             elif cmd == "cuaca":
-                reply = f"☁️ CUACA\n\nForecast: {weather.get('forecast', '-')}\nSuhu: {weather.get('temperature', 0)} °C"
+                # 🟢 PERBAIKAN: Menampilkan seluruh parameter cuaca dari Firebase
+                reply = (
+                    "☁️ CUACA\n\n"
+                    f"Forecast: {weather.get('forecast', '-')}\n"
+                    f"Suhu: {weather.get('temperature', 0)} °C\n"
+                    f"Humidity: {weather.get('humidity', 0)} %\n"
+                    f"Rain Prob: {weather.get('rain_probability', 0)} %\n"
+                    f"Curah Hujan (3j): {weather.get('rain_3h', 0)} mm"
+                )
             elif cmd == "pompa":
-                reply = f"🚿 POMPA\n\nStatus: {agent.get('status', '-')}\nDurasi: {agent.get('pump_duration', 0)} detik"
+                reply = (
+                    "🚿 POMPA\n\n"
+                    f"Status: {agent.get('status', '-')}\n"
+                    f"Durasi: {agent.get('pump_duration', 0)} detik\n"
+                    f"Alasan: {agent.get('reason', '-')}"
+                )
             elif cmd == "tanaman":
                 detected = cam.get("tanaman", cam.get("plant_detected", False))
-                reply = f"🌿 DETEKSI TANAMAN\n\nTerdeteksi: {'Ya' if detected else 'Tidak'}"
+                # 🟢 PERBAIKAN: Menambahkan nilai confidence ke dalam tampilan teks
+                reply = (
+                    "🌿 DETEKSI TANAMAN\n\n"
+                    f"Terdeteksi: {'Ya' if detected else 'Tidak'}\n"
+                    f"Confidence: {cam.get('confidence', 0)} %"
+                )
             else:
-                reply = "Perintah tidak dikenali."
+                reply = "Perintah tidak dikenali.\nCoba: status, cuaca, pompa, atau tanaman."
+
             return send_smart_twiml(reply)
+
 
         # ----------------------------------------------------
         # HANDLING INTENT: ANALYSIS & CHAT (DENGAN TwiML CHUNKING)
