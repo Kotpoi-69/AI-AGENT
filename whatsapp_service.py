@@ -129,9 +129,17 @@ def _send_whatsapp(to, message=None, content_sid=None, content_variables=None):
 
 
 def send_whatsapp(to, message):
-    """Mengirim satu pesan WhatsApp."""
+    """Mengirim satu pesan WhatsApp dengan auto-fallback template jika sesi mati."""
     status = _send_whatsapp(to=to, message=message)
+    
+    # 🟢 Tambahkan logika otomatis yang sama seperti di fungsi chunked
+    if status == "SESSION_EXPIRED":
+        print("⚠️ Menyimpang ke rencana B (Single): Mengirim pesan template untuk mengaktifkan sesi.")
+        aktifkan_sesi_24jam(to=to)
+        return False
+        
     return status == "SUCCESS"
+
 
 
 def send_whatsapp_chunked(to, message, chunk_size=1500):
