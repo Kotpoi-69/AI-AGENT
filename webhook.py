@@ -100,6 +100,8 @@ def format_analysis_result(result):
 
 # webhook.py (BAGIAN 2)
 
+# webhook.py (BAGIAN 2 - REVISI FINAL ANTI-CHUNKING ERROR)
+
 @app.get("/")
 async def root():
     return {"status": "ok", "service": "smart-agriculture-webhook"}
@@ -161,6 +163,9 @@ async def webhook(
 
         intent_type = intent.get("intent", "chat")
 
+        # ----------------------------------------------------
+        # HANDLING INTENT: COMMAND
+        # ----------------------------------------------------
         if intent_type == "command":
             cmd = intent.get("command")
             if cmd == "status":
@@ -186,6 +191,9 @@ async def webhook(
                 reply = "Perintah tidak dikenali."
             return send_smart_twiml(reply)
 
+        # ----------------------------------------------------
+        # HANDLING INTENT: ANALYSIS & CHAT (DENGAN TwiML CHUNKING)
+        # ----------------------------------------------------
         elif intent_type == "analysis":
             try:
                 context = build_gemini_context(sensor, weather, agent, cam)
@@ -193,25 +201,30 @@ async def webhook(
                 reply = format_analysis_result(result)
             except Exception as e:
                 reply = "AI analisis sedang tidak tersedia."
-            
-            if len(reply) > 1500:
-                send_whatsapp_chunked(sender, reply)
-                return Response(content=str(MessagingResponse()), media_type="application/xml")
-            else:
-                return send_smart_twiml(reply)
-
         else:
             try:
                 reply = agriculture_chat_agent(message)
             except Exception as e:
                 reply = "AI chat sedang sibuk."
+
+        # 🟢 TRICK FINAL: Pecah string panjang langsung ke XML TwiML tanpa lewat twilio_service
+        if len(reply) > 1500:
+            twilio_response = MessagingResponse()
+            chunk_size = 1500
+            chunks = [reply[i:i + chunk_size] for i in range(0, len(reply), chunk_size)]
             
-            # 🟢 PROTEKSI BARU: Pecah chat jika respon Gemini > 1500 karakter
-            if len(reply) > 1500:
-                send_whatsapp_chunked(sender, reply)
-                return Response(content=str(MessagingResponse()), media_type="application/xml")
-            else:
-                return send_smart_twiml(reply)
+            for i, chunk in enumerate(chunks, start=1):
+                prefix = f"({i}/{len(chunks)})\n"
+                # Twilio mengizinkan beberapa tag <Message> dalam satu response Webhook
+                twilio_response.message(prefix + chunk)
+                
+            return Response(content=str(twilio_response), media_type="application/xml")
+        else:
+            return send_smart_twiml(reply)
+
+    except Exception as e:
+        print(f"WEBHOOK FATAL: {type(e).__name__}: {e}")
+        return send_smart_twiml("Terjadi kesalahan pada sistem. Silakan coba lagi nanti.")
 
     except Exception as e:
         print(f"WEBHOOK FATAL: {type(e).__name__}: {e}")
