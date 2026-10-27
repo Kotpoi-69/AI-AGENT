@@ -28,21 +28,38 @@ def send_message(text):
     print(text)
 
 
-def _send_whatsapp(to, message):
+def _send_whatsapp(to, message=None, content_sid=None, content_variables=None):
     """
     Mengirim satu pesan melalui Twilio.
-    Mengembalikan True jika berhasil dan False jika gagal.
+    Bisa mengirim pesan teks biasa (body) atau template (content_sid).
     """
     if client is None or not FROM:
         print("WHATSAPP ERROR: Konfigurasi Twilio belum lengkap.")
         return False
 
     try:
-        msg = client.messages.create(
-            from_=FROM,
-            body=message,
-            to=f"whatsapp:{to}"
-        )
+        # Menyiapkan argumen dasar
+        payload = {
+            "from_": FROM,
+            "to": f"whatsapp:{to}"
+        }
+
+        # JIKA MENGGUNAKAN TEMPLATE (Untuk pesan pembuka / pemicu jendela 24 jam)
+        if content_sid:
+            payload["content_sid"] = content_sid
+            if content_variables:
+                payload["content_variables"] = content_variables
+        
+        # JIKA MENGGUNAKAN TEKS BEBAS (Hasil Gemini - hanya bekerja jika jendela 24 jam aktif)
+        elif message:
+            payload["body"] = message
+        
+        else:
+            print("WHATSAPP ERROR: Harus menyertakan message atau content_sid.")
+            return False
+
+        # Kirim request ke Twilio
+        msg = client.messages.create(**payload)
 
         print("WhatsApp sent:", msg.sid)
         return True
@@ -52,18 +69,13 @@ def _send_whatsapp(to, message):
             f"TWILIO ERROR: code={e.code}, "
             f"status={e.status}, message={e.msg}"
         )
-
-        if e.code == 63038:
-            print(
-                "Pengiriman dihentikan: batas pesan harian "
-                "Twilio telah tercapai."
-            )
-
+        if e.code == 21654:
+            print("Tips: Gunakan 'content_sid' untuk pesan pertama di luar jendela 24 jam.")
         return False
-
     except Exception as e:
         print(f"WHATSAPP ERROR: {type(e).__name__}: {e}")
         return False
+
 
 
 def send_whatsapp(to, message):
