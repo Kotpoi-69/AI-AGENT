@@ -739,7 +739,8 @@ async def webhook(
                     "AI analisis sedang tidak tersedia. "
                     "Silakan coba lagi nanti."
                 )
-            return send_smart_twiml(sender, reply)
+                send_smart_twiml(sender, reply)
+                return Response("OK")
 
         # ----------------------------------------------------
         # AGRICULTURE CHAT
