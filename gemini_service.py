@@ -892,7 +892,7 @@ ATURAN UTAMA
     Namun keputusan kebutuhan agronomis tetap berdasarkan
     Knowledge Base dan kondisi tanaman.
 
-11. Probabilitas hujan OWM >= 50% merupakan TECHNICAL
+11. Probabilitas hujan OWM >= 70% merupakan TECHNICAL
     SAFETY GATE yang akan diproses Python untuk menunda
     irigasi dan pemupukan.
 
@@ -1382,10 +1382,6 @@ untuk budidaya tanaman cabai.
 
 Jawab pertanyaan pengguna berdasarkan
 Knowledge Base yang tersedia.
-
-Jangan mengarang informasi yang tidak tersedia.
-Jawablah pertanyaan pengguna secara padat, ringkas, langsung ke inti masalah, dan MAKSIMAL gunakan 1000 karakter. 
-Jangan memberikan penjelasan yang bertele-tele
 
 Jika pertanyaan berkaitan dengan kondisi aktual
 tanaman, gunakan data sensor, cuaca, umur tanaman,
