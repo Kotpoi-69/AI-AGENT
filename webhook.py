@@ -741,7 +741,8 @@ async def webhook(
                 )
             print("ANALYSIS REPLY LENGTH:", len(reply))
             print("ANALYSIS REPLY PREVIEW:", repr(reply[:200]))
-            return send_smart_twiml(reply)
+            print("TEST: masuk cabang analysis")
+            return send_smart_twiml("Tes balasan WhatsApp dari cabang analysis.")
 
         # ----------------------------------------------------
         # AGRICULTURE CHAT
