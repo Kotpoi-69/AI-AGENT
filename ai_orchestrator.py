@@ -288,7 +288,7 @@ def build_actuator_command(decision):
             **common,
             "pompa": True,
             "servo": SERVO_OFF,
-            "pump_duration": 20,
+            "pump_duration": 80,
             "action": ACTION_IRRIGATE,
         }
 
