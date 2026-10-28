@@ -739,10 +739,7 @@ async def webhook(
                     "AI analisis sedang tidak tersedia. "
                     "Silakan coba lagi nanti."
                 )
-            print("ANALYSIS REPLY LENGTH:", len(reply))
-            print("ANALYSIS REPLY PREVIEW:", repr(reply[:200]))
-            print("TEST: masuk cabang analysis")
-            return send_smart_twiml("Tes balasan WhatsApp dari cabang analysis.")
+            return send_smart_twiml(reply)
 
         # ----------------------------------------------------
         # AGRICULTURE CHAT
