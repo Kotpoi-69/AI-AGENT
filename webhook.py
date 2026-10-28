@@ -13,6 +13,7 @@ from firebase_service import get_data, update_data
 from intent_classifier import classify_intent
 from agri_ai_agent import agriculture_chat_agent
 from gemini_service import analyze_farm
+from xml.etree import ElementTree as ET
 
 
 
@@ -35,18 +36,31 @@ def send_smart_twiml(message=None):
     twiml = MessagingResponse()
 
     if message:
-        max_length = 1500
-        for i in range(0, len(message), max_length):
-            twiml.message(message[i:i + max_length])
+        # Satu pesan untuk respons yang panjangnya masih sesuai batas.
+        twiml.message(str(message))
 
     xml_response = str(twiml)
 
-    print("TWIML RESPONSE:", xml_response[:1000])
-    print("TWIML LENGTH:", len(xml_response))
+    # Validasi XML sebelum dikirim.
+    try:
+        root = ET.fromstring(xml_response)
+        print("TWIML XML VALID:", root.tag == "Response")
+        print("TWIML MESSAGE COUNT:", len(root.findall("Message")))
+        print("TWIML BODY LENGTH:", sum(
+            len(node.text or "")
+            for node in root.findall(".//Body")
+        ))
+    except ET.ParseError as exc:
+        print("TWIML XML INVALID:", repr(exc))
+        raise
+
+    print("TWIML FULL LENGTH:", len(xml_response))
+    print("TWIML END:", repr(xml_response[-300:]))
 
     return Response(
         content=xml_response,
-        media_type="application/xml"
+        media_type="application/xml",
+        status_code=200
     )
 
 
