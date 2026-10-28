@@ -39,8 +39,13 @@ def send_smart_twiml(message=None):
         for i in range(0, len(message), max_length):
             twiml.message(message[i:i + max_length])
 
+    xml_response = str(twiml)
+
+    print("TWIML RESPONSE:", xml_response[:1000])
+    print("TWIML LENGTH:", len(xml_response))
+
     return Response(
-        content=str(twiml),
+        content=xml_response,
         media_type="application/xml"
     )
 
@@ -720,7 +725,8 @@ async def webhook(
                     "AI analisis sedang tidak tersedia. "
                     "Silakan coba lagi nanti."
                 )
-
+            print("ANALYSIS REPLY LENGTH:", len(reply))
+            print("ANALYSIS REPLY PREVIEW:", repr(reply[:200]))
             return send_smart_twiml(reply)
 
         # ----------------------------------------------------
