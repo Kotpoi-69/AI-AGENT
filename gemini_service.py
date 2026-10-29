@@ -4,7 +4,7 @@ import json
 import re
 from datetime import datetime, timezone
 
-from google import genai
+from groq import Groq
 
 from knowledge_base import KnowledgeBase
 
@@ -13,8 +13,8 @@ from knowledge_base import KnowledgeBase
 # CONFIGURATION
 # ============================================================
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-MODEL_NAME = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+MODEL_NAME = os.getenv("GROQ_MODEL", "llama-3.3-70b-specdec")
 
 
 # ============================================================
@@ -38,10 +38,10 @@ MAX_YOLO_AGE_SECONDS = 300
 # WEATHER SAFETY
 # ------------------------------------------------------------
 
-# Jika probabilitas hujan OWM >= 50%, maka:
+# Jika probabilitas hujan OWM >= 70%, maka:
 # - irigasi ditunda
 # - pemupukan ditunda
-OWM_RAIN_PROBABILITY_THRESHOLD = 50.0
+OWM_RAIN_PROBABILITY_THRESHOLD = 70.0
 
 # ------------------------------------------------------------
 # FERTILIZATION SAFETY
@@ -61,7 +61,7 @@ FERTILIZATION_PH_MAX = 6.3
 # ============================================================
 
 client = genai.Client(
-    api_key=GEMINI_API_KEY
+    api_key=GROQ_API_KEY
 )
 
 kb = KnowledgeBase()
