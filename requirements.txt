@@ -4,7 +4,6 @@ python-multipart
 fastapi
 uvicorn
 twilio
-google.genai
 groq
 beautifulsoup4
 tzdata
