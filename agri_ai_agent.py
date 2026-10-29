@@ -15,21 +15,11 @@ from gemini_service import (
 # ==========================================
 
 def get_context():
-
     return {
-
-        "sensor":
-            get_data("sensor") or {},
-
-        "weather":
-            get_weather_forecast(),
-
-        "agent":
-            get_data("agent") or {},
-
-        "cam":
-            get_data("cam") or {},
-
+        "sensor": get_data("sensor") or {},
+        "weather": get_weather_forecast(),
+        "agent": get_data("agent") or {},
+        "cam": get_data("cam") or {},
     }
 
 
@@ -37,17 +27,13 @@ def get_context():
 # AGRICULTURE CHAT AGENT
 # ==========================================
 
-def agriculture_chat_agent(
-        user_message: str
-):
-
+def agriculture_chat_agent(user_message: str):
     context = get_context()
 
     sensor = context["sensor"]
     weather = context["weather"]
     agent = context["agent"]
     cam = context["cam"]
-    
 
     # ======================================
     # PROMPT
@@ -122,16 +108,11 @@ Detected :
 Confidence :
 {cam.get('confidence', '-')}
 
-
-
 Jumlah Tanaman :
 {agent.get('plant_count', '-')}
 
 Umur Tanaman :
 {agent.get('age_days', '-')}
-
-
-
 
 ==================================
 USER QUESTION
@@ -145,32 +126,28 @@ ATURAN:
 2. Gunakan data aktual di atas.
 3. Jika data tidak tersedia, katakan tidak tersedia.
 4. Berikan jawaban seperti konsultan pertanian profesional.
-5. Jika user bertanya panen, umur tanaman atau
-   jumlah tanaman 
+5. Jika user bertanya panen, umur tanaman atau jumlah tanaman,
    gunakan DATA PRODUKSI.
 6. Jika user bertanya kondisi lahan,
    gunakan sensor + cuaca + AI agent.
-
-   
 """
 
+    try:
+        response = chat_with_ai(prompt)
 
-        try:
-            response = chat_with_ai(prompt)
-
-            if not response or not response.strip():
-                return (
-                    "⚠️ Layanan AI sedang tidak tersedia karena "
-                    "respons Gemini kosong atau kuota API tercapai. "
-                    "Silakan coba kembali setelah kuota tersedia."
-                )
-
-            return response
-
-        except Exception as e:
-            print("AGRI CHAT ERROR:", e)
-
+        if not response or not response.strip():
             return (
-                "⚠️ AI sedang tidak tersedia. "
-                "Silakan coba beberapa saat lagi."
+                "⚠️ Layanan AI sedang tidak tersedia karena "
+                "respons Gemini kosong atau kuota API tercapai. "
+                "Silakan coba kembali setelah kuota tersedia."
             )
+
+        return response
+
+    except Exception as e:
+        print("AGRI CHAT ERROR:", e)
+
+        return (
+            "⚠️ AI sedang tidak tersedia. "
+            "Silakan coba beberapa saat lagi."
+        )
