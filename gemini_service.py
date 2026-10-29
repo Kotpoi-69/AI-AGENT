@@ -38,7 +38,7 @@ MAX_YOLO_AGE_SECONDS = 300
 # WEATHER SAFETY
 # ------------------------------------------------------------
 
-# Jika probabilitas hujan OWM >= 70%, maka:
+# Jika probabilitas hujan OWM >= 50%, maka:
 # - irigasi ditunda
 # - pemupukan ditunda
 OWM_RAIN_PROBABILITY_THRESHOLD = 70.0
@@ -57,11 +57,11 @@ FERTILIZATION_PH_MAX = 6.3
 
 
 # ============================================================
-# GEMINI CLIENT
+# GROQ CLIENT
 # ============================================================
 
 client = Groq(
-    api_key=GROQ_API_KEY
+    api_key=GROQ_API_KEY,
 )
 
 kb = KnowledgeBase()
@@ -989,46 +989,48 @@ PENTING:
 
 def generate_response(prompt, temperature=0.1):
     """
-    Mengirim prompt ke Gemini dan mencatat penyebab
+    Mengirim prompt ke Groq dan mencatat penyebab
     kegagalan tanpa menyamarkan error aslinya.
+
+    Nama fungsi dan parameter dipertahankan agar fungsi lain
+    yang sudah ada tetap kompatibel.
     """
     try:
-        print(f"[GEMINI] Model aktif: {MODEL_NAME}")
-        print(f"[GEMINI] Panjang prompt: {len(prompt)} karakter")
+        print(f"[GROQ] Model aktif: {MODEL_NAME}")
+        print(f"[GROQ] Panjang prompt: {len(prompt)} karakter")
 
-        response = client.models.generate_content(
+        response = client.chat.completions.create(
             model=MODEL_NAME,
-            contents=prompt,
-            config={
-                "temperature": temperature,
-            },
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt,
+                }
+            ],
+            temperature=temperature,
         )
 
-        response_text = getattr(response, "text", None)
+        response_text = None
+        if response and getattr(response, "choices", None):
+            message = getattr(response.choices[0], "message", None)
+            response_text = getattr(message, "content", None)
 
         # Diagnostik jika SDK tidak menyediakan teks.
         if not response_text or not response_text.strip():
-            print("[GEMINI] Respons teks kosong.")
-            print(
-                "[GEMINI] Candidate info:",
-                repr(getattr(response, "candidates", None))
-            )
-            print(
-                "[GEMINI] Prompt feedback:",
-                repr(getattr(response, "prompt_feedback", None))
-            )
+            print("[GROQ] Respons teks kosong.")
+            print("[GROQ] Response object:", repr(response))
             return ""
 
         print(
-            f"[GEMINI] Respons diterima: "
+            f"[GROQ] Respons diterima: "
             f"{len(response_text)} karakter"
         )
 
         return response_text.strip()
 
     except Exception as error:
-        print(f"[GEMINI] Error type: {type(error).__name__}")
-        print(f"[GEMINI] Error detail: {error}")
+        print(f"[GROQ] Error type: {type(error).__name__}")
+        print(f"[GROQ] Error detail: {error}")
         return ""
 
 # ============================================================
@@ -1426,6 +1428,5 @@ def ask_ai(
         message=question,
         context=context,
     )
-
 
 
