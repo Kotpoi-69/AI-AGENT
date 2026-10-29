@@ -711,7 +711,20 @@ async def webhook(
                     purpose="analysis"
                 )
 
-                reply = format_analysis_result(result)
+                # Bedakan kegagalan respons Gemini dari hasil analisis normal.
+                # analyze_farm() mengembalikan hasil default saat respons Gemini kosong.
+                if (
+                    isinstance(result, dict)
+                    and str(result.get("reason", "")).strip().lower()
+                    == "gemini tidak memberikan respons."
+                ):
+                    reply = (
+                        "⚠️ Analisis AI gagal memperoleh respons dari Gemini. "
+                        "Layanan mungkin sedang mengalami gangguan atau kuota API "
+                        "telah habis. Silakan coba kembali setelah layanan tersedia."
+                    )
+                else:
+                    reply = format_analysis_result(result)
 
             except Exception as e:
                 print(
@@ -739,6 +752,13 @@ async def webhook(
                     )
 
                 return send_smart_twiml(reply)
+
+            except Exception as e:
+                print(f"CHAT ERROR: {type(e).__name__}: {e}")
+                return send_smart_twiml(
+                    "⚠️ Layanan chat AI sedang tidak tersedia. "
+                    "Silakan coba kembali beberapa saat lagi."
+                )
 
     except Exception as e:
         print(
