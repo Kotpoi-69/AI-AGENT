@@ -700,41 +700,33 @@ async def webhook(
         elif intent_type == "analysis":
             try:
                 context = build_gemini_context(
-                    sensor,
-                    weather,
-                    agent,
-                    cam
+                    sensor, weather, agent, cam
                 )
 
-                result = analyze_farm(
-                    context,
-                    purpose="analysis"
-                )
+                result = analyze_farm(context, purpose="analysis")
 
-                # Bedakan kegagalan respons Gemini dari hasil analisis normal.
-                # analyze_farm() mengembalikan hasil default saat respons Gemini kosong.
                 if (
-                    isinstance(result, dict)
-                    and str(result.get("reason", "")).strip().lower()
-                    == "gemini tidak memberikan respons."
+                    not result
+                    or result.get("reason") == "Gemini tidak memberikan respons."
                 ):
                     reply = (
-                        "⚠️ Analisis AI gagal memperoleh respons dari Gemini. "
-                        "Layanan mungkin sedang mengalami gangguan atau kuota API "
-                        "telah habis. Silakan coba kembali setelah layanan tersedia."
+                        "⚠️ Layanan AI sedang tidak tersedia karena "
+                        "kuota Gemini telah mencapai batas. "
+                        "Silakan coba lagi nanti."
                     )
                 else:
                     reply = format_analysis_result(result)
 
             except Exception as e:
-                print(
-                    f"ANALYSIS ERROR: {type(e).__name__}: {e}"
-                )
-
+                print(f"ANALYSIS ERROR: {type(e).__name__}: {e}")
                 reply = (
-                    "AI analisis sedang tidak tersedia. "
+                    "⚠️ Layanan AI sedang tidak tersedia. "
                     "Silakan coba lagi nanti."
                 )
+
+            print(f"[WA ANALYSIS] Panjang balasan: {len(reply)}")
+            print(f"[WA ANALYSIS] Balasan: {reply[:200]}")
+
             return send_smart_twiml(reply)
        
         # ----------------------------------------------------
