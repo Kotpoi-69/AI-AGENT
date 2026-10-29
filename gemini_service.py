@@ -60,7 +60,7 @@ FERTILIZATION_PH_MAX = 6.3
 # GEMINI CLIENT
 # ============================================================
 
-client = genai.Client(
+client = Groq(
     api_key=GROQ_API_KEY
 )
 
