@@ -732,17 +732,13 @@ async def webhook(
             try:
                 reply = agriculture_chat_agent(message)
 
-            except Exception as e:
-                print(
-                    f"CHAT ERROR: {type(e).__name__}: {e}"
-                )
+                if not reply or not reply.strip():
+                    reply = (
+                        "⚠️ Layanan AI sedang tidak tersedia. "
+                        "Silakan coba kembali beberapa saat lagi."
+                    )
 
-                reply = (
-                    "AI chat sedang sibuk. "
-                    "Silakan coba lagi nanti."
-                )
-
-            return send_smart_twiml(reply)
+                return send_smart_twiml(reply)
 
     except Exception as e:
         print(
