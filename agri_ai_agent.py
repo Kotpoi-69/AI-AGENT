@@ -155,20 +155,22 @@ ATURAN:
 """
 
 
-    try:
+        try:
+            response = chat_with_ai(prompt)
 
-        response = chat_with_ai(prompt)
+            if not response or not response.strip():
+                return (
+                    "⚠️ Layanan AI sedang tidak tersedia karena "
+                    "respons Gemini kosong atau kuota API tercapai. "
+                    "Silakan coba kembali setelah kuota tersedia."
+                )
 
-        return response
+            return response
 
-    except Exception as e:
+        except Exception as e:
+            print("AGRI CHAT ERROR:", e)
 
-        print(
-            "AGRI CHAT ERROR:",
-            e
-        )
-
-        return (
-            "AI sedang tidak tersedia. "
-            "Silakan coba beberapa saat lagi."
-        )
+            return (
+                "⚠️ AI sedang tidak tersedia. "
+                "Silakan coba beberapa saat lagi."
+            )
