@@ -31,8 +31,8 @@ def update_weather():
 
         data = response.json()
 
-        # Ambil prediksi 12 jam ke depan
-        forecast = data["list"][8]
+        # Ambil prediksi 3 jam ke depan
+        forecast = data["list"][0]
 
         rain_probability = (
             forecast["pop"] * 100
