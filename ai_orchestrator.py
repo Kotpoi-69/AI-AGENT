@@ -551,4 +551,8 @@ def run_ai_cycle():
 # ============================================================
 
 if __name__ == "__main__":
-    main()
+    print(
+        "AI Orchestrator tidak menjalankan loop otomatis. "
+        "Jalankan API dengan: "
+        "uvicorn orchestrator_api:app --host 0.0.0.0 --port $PORT"
+    )
