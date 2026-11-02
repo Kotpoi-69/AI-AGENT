@@ -856,7 +856,7 @@ ATURAN UTAMA
 3. Jangan mengubah status kebutuhan menjadi false hanya karena diblokir oleh Python safety layer (YOLO, sensor hujan, OWM, cooldown).
 4. Jika data riwayat pemupukan terakhir tidak ada, jangan asumsikan jadwal pemupukan sudah jatuh tempo. Jangan mengarang data.
 5. pH rendah tidak otomatis memicu fertilization_needed=true (koreksi pH bisa berupa pengapuran, bukan NPK).
-6. OWM hanya prakiraan; keputusan agronomis tetap mengacu pada KB dan kondisi riil tanaman.
+6. OWM hanya prakiraan 3 jam yang akan datang; keputusan agronomis tetap mengacu pada KB dan kondisi riil tanaman.
 7. WAJIB mengisi field "reason" sepenuhnya dalam Bahasa Indonesia yang mudah dipahami.
 
 ============================================================
