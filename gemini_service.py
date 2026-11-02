@@ -1338,8 +1338,10 @@ Jawab pertanyaan pengguna berdasarkan
 Knowledge Base yang tersedia.
 
 Jika pertanyaan berkaitan dengan kondisi aktual
-tanaman, gunakan data sensor, cuaca, umur tanaman,
+tanaman, gunakan data sensor, umur tanaman,
 dan data YOLO yang diberikan.
+
+Data cuaca merupakan prediksi 3 jam yang akan datang
 
 Data sistem:
 {json.dumps(
