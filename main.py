@@ -9,7 +9,7 @@ def main():
         result = run_ai_cycle()
 
         print("Cycle Done:", result)
-        time.sleep(5)
+
 
 
 if __name__ == "__main__":
