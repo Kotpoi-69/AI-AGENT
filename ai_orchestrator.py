@@ -360,53 +360,66 @@ def generate_command_id(status, current_command):
 # ============================================================
 
 def publish_actuator_command(decision):
-    """Publikasikan aksi valid satu kali sampai keputusan kembali NONE."""
+    """
+    Publikasikan keputusan aktuator apabila ESP32 dalam kondisi idle
+    dan tidak ada perintah sebelumnya yang masih pending.
+    """
+
     action = decision.get("action", ACTION_NONE)
-    control = get_data("ai_control")
-    if not isinstance(control, dict):
-        control = {}
 
-    last_published_action = str(
-        control.get("last_published_action", ACTION_NONE)
-    ).upper().strip()
-
+    # Tidak ada tindakan yang perlu diterbitkan.
     if action == ACTION_NONE:
-        reset_ok = update_data("ai_control", {"last_published_action": ACTION_NONE})
-        if not reset_ok:
-            print("[ACTUATOR] WARNING: latch NONE gagal disimpan.")
+        update_data("ai_control", {
+            "last_published_action": ACTION_NONE
+        })
         return False, "Tidak ada tindakan yang perlu diterbitkan."
 
+    # Validasi jenis tindakan.
     if action not in {ACTION_IRRIGATE, ACTION_FERTILIZE}:
         return False, "Tindakan tidak valid."
+
+    # Validasi kebutuhan tindakan.
     if action == ACTION_IRRIGATE and not decision.get("irrigation_needed"):
         return False, "Kebutuhan irigasi tidak terpenuhi."
+
     if action == ACTION_FERTILIZE and not decision.get("fertilization_needed"):
         return False, "Kebutuhan pemupukan tidak terpenuhi."
-    if last_published_action == action:
-        return False, f"Tindakan {action} sudah diterbitkan; menunggu keputusan kembali NONE."
 
+    # Periksa status aktual ESP32 dan command sebelumnya.
     ready, status, current_command, message = check_actuator_ready()
+
     if not ready:
         print("[ACTUATOR] Command tidak diterbitkan:", message)
         return False, message
 
+    # Buat ID perintah baru.
     command_id = generate_command_id(status, current_command)
+
     command = build_actuator_command(decision)
     command["timestamp"] = command_id
 
+    # Publikasikan perintah ke Firebase.
     if not update_data("aktuator", command):
         return False, "Gagal menyimpan perintah ke Firebase."
 
+    # Simpan informasi publikasi untuk monitoring.
     latch_saved = update_data("ai_control", {
         "last_published_action": action,
-        "last_published_command_id": command_id,
+        "last_published_command_id": command_id
     })
+
     if not latch_saved:
-        print("[ACTUATOR] WARNING: command terkirim, tetapi latch gagal disimpan.")
+        print(
+            "[ACTUATOR] WARNING: Command terkirim, "
+            "tetapi metadata publikasi gagal disimpan."
+        )
 
-    print(f"[ACTUATOR] Perintah {action} diterbitkan. Command ID: {command_id}")
+    print(
+        f"[ACTUATOR] Perintah {action} diterbitkan. "
+        f"Command ID: {command_id}"
+    )
+
     return True, f"Perintah {action} berhasil diterbitkan."
-
 
 # ============================================================
 # MENYIMPAN HASIL ANALISIS
